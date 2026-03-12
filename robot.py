@@ -11,20 +11,67 @@ SCALE = 0.1
 def load_robots(num_robots):
     return [sample_robot() for _ in range(num_robots)]
 
+
+def robot_from_mask(mask):
+    """Create a robot dict from a binary mask. Stores the mask for mutation."""
+    masses, springs = mask_to_robot(mask)
+    masses = masses * SCALE
+    return {
+        "mask": mask.copy(),
+        "n_masses": masses.shape[0],
+        "n_springs": springs.shape[0],
+        "masses": masses,
+        "springs": springs,
+    }
+
+
+def postprocess_mask(mask):
+    """Keep largest connected component and shift to bottom-left. Returns valid mask or None if empty."""
+    mask = np.asarray(mask, dtype=int)
+    labeled, num_features = ndimage.label(mask)
+    if num_features == 0:
+        return None
+    component_sizes = ndimage.sum(mask, labeled, range(1, num_features + 1))
+    largest_component = np.argmax(component_sizes) + 1
+    mask = (labeled == largest_component).astype(int)
+    rows, cols = np.where(mask)
+    min_row, max_row = rows.min(), rows.max()
+    min_col, max_col = cols.min(), cols.max()
+    component = mask[min_row:max_row + 1, min_col:max_col + 1]
+    new_mask = np.zeros((MASK_DIM, MASK_DIM), dtype=int)
+    component_height, component_width = component.shape
+    new_mask[MASK_DIM - component_height:MASK_DIM, 0:component_width] = component
+    return new_mask
+
+
+def crossover_mask(mask1, mask2):
+    """Uniform crossover: each voxel from parent1 or parent2 with 50% chance. Postprocess for connectivity."""
+    child = np.zeros((MASK_DIM, MASK_DIM), dtype=int)
+    for r in range(MASK_DIM):
+        for c in range(MASK_DIM):
+            child[r, c] = mask1[r, c] if np.random.random() < 0.5 else mask2[r, c]
+    result = postprocess_mask(child)
+    if result is None:
+        return mask1.copy()  # fallback to parent1
+    return result
+
+
+def mutate_mask(mask, mutation_rate=1.0):
+    """Mutate the mask by flipping one random voxel, then keep largest connected component."""
+    mask = mask.copy().astype(int)
+    r, c = np.random.randint(MASK_DIM), np.random.randint(MASK_DIM)
+    mask[r, c] = 1 - mask[r, c]
+    result = postprocess_mask(mask)
+    return sample_mask(0.55) if result is None else result
+
+
 # Randomly sample a binary mask of size MASK_DIM x MASK_DIM
 # Convert the binary mask to a mass-spring robot geometry
 # The parameter p is by default set to 0.55, which is the probability of a voxel being filled.
 # This is a manually tuned value that seems to produce a variety of different robot geometries.
 def sample_robot(p=0.55):
     mask = sample_mask(p)
-    masses, springs = mask_to_robot(mask)
-    masses = masses * SCALE # NOTE: scale of the robot geometry is KEY to stable simulation!
-    return {
-        "n_masses": masses.shape[0],
-        "n_springs": springs.shape[0],
-        "masses": masses,
-        "springs": springs,
-    }
+    return robot_from_mask(mask)
 
 # Convert a voxel position to a list of mass coordinates
 # Each voxel has a mass located at each of its four corners

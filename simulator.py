@@ -47,6 +47,9 @@ class Simulator:
         self.adam_beta2 = ti.field(dtype=ti.f32, shape=(), needs_grad=False)
         self.learning_rate = ti.field(dtype=ti.f32, shape=(), needs_grad=False)
         self.n_sims[None] = self.config["n_sims"]
+        direction = self.config.get("fitness_direction", "forward")
+        self.fitness_backward = ti.field(dtype=ti.i32, shape=(), needs_grad=False)
+        self.fitness_backward[None] = 1 if direction == "backward" else 0
         self.steps[None] = self.config["sim_steps"]
         self.max_n_masses[None] = self.config["n_masses"]
         self.max_n_springs[None] = self.config["n_springs"]
@@ -269,7 +272,10 @@ class Simulator:
         for sim_idx in range(self.n_sims[None]):
             com0 = self.center[sim_idx, 0].x
             comt = self.center[sim_idx, self.steps[None]].x
-            self.loss[sim_idx] = com0 - comt
+            if self.fitness_backward[None] == 1:
+                self.loss[sim_idx] = comt - com0  # backward: maximize movement left
+            else:
+                self.loss[sim_idx] = com0 - comt  # forward: maximize movement right
 
     @ti.kernel
     def update_weights(self):

@@ -16,4 +16,24 @@ This repository provides a physical simulation platform for studying automatic d
 1. Review the code in `run.py`. It shows an example of how to interface with the simulator.
 2. Next review `config.yaml`. This includes a number of parameters, only a small number of which you should consider modifying. 
 3. Review `robot.py`. This code illustrates how random robot designs can be sampled and explains the key constraints to keep in mind when representing robots for the simulator. You can also visualize designs in `visualize_robots.ipynb`. 
-4. Finally, try to run the code: `python run.py`. This will generate some results files that you can visualize with `plot_fitness.ipynb` and `visualizer.py`. 
+4. Finally, try to run the code: `python run.py`. This will generate some results files that you can visualize with `plot_fitness.ipynb` and `visualizer.py`.
+
+## Parallel Hill Climber (Evolutionary Morphology Search)
+
+To run the parallel hill climber for evolving robot morphologies:
+
+```bash
+python run_hill_climber.py --generations 10
+```
+
+This runs 16 independent hill climbers (one per `n_sims` in config), each mutating and improving their robot morphology over generations. Results are saved in the same format as `run.py`—use `plot_fitness.ipynb` to view fitness over generations and `visualizer.py` to watch the best robots.
+
+## Genetic Algorithm + AFPO
+
+To run the genetic algorithm with Age-Fitness Pareto Optimization:
+
+```bash
+python run_genetic_algorithm.py --generations 10
+```
+
+This uses crossover (two parents → child), mutation, and AFPO for selection—keeping a Pareto front on (fitness, age) so young solutions can compete with old ones and prevent bloat. Same output format as above. 

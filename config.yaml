@@ -12,16 +12,17 @@ taichi:
 # Use n_sims to set the number of robots to run in parallel.
 # Use sim_steps to set the number of simulation steps to run for each robot. The default probably does not need to be changed. 
 simulator:
-  n_sims: 16
-  sim_steps: 1000
-  learning_steps: 40
+  fitness_direction: backward  # forward (walk right) | backward (walk left)
+  n_sims: 40
+  sim_steps: 1500
+  learning_steps: 80
   dt: 3e-3
   eps: 1e-5
   springA: 0.1
   springK: 15000.0
   ground_height: 0.02
-  gravity: 10.0
-  friction: 0.9
+  gravity: 12.0
+  friction: 0.7
   restitution: 0.1
   drag_damping: 10.0
   nn_hidden_size: 128
